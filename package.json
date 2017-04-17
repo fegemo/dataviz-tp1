@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Dados exibidos em uma tabela interativa",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepare": "npm install -g postcss postcss-cssnext",
+    "css": "postcss --use postcss-cssnext -o assets/css/estilos.processados.css assets/css/estilos.css",
+    "build": "npm run css"
   },
   "author": "Flávio Coutinho",
   "license": "ISC"
