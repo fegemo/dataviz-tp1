@@ -1,4 +1,4 @@
-const dataUrl = `../../data/school-census/2015/sc-2015-states.csv`;
+const dataUrl = `../data/school-census/2015/sc-2015-states.csv`;
 let mainVizEl = d3.select('#main-visualization');
 let tableEl = mainVizEl.append('table').classed('table table-striped table-fixed', true);
 let theadEl = tableEl.append('thead');
