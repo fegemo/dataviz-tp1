@@ -1,0 +1,48 @@
+:root {
+  --sort-icon-background: #fbffd7;
+}
+
+
+.column-name {
+  @nest
+  th.ascending &,
+  th.descending & {
+    text-decoration: underline;
+  }
+}
+
+.column-sort {
+  display: inline-block;
+  width: 1.4em;
+  height: 1.4em;
+  background-color: var(--sort-icon-background);
+  border-radius: 50%;
+  text-align: center;
+  cursor: pointer;
+  transition: all 100ms ease-out;
+
+  &:hover {
+    background-color: color(var(--sort-icon-background) lightness(-20%));
+  }
+
+  @nest th.ascending & {
+    & .fa-sort-desc,
+    & .fa-sort {
+      display: none;
+    }
+  }
+
+  @nest th.descending & {
+    & .fa-sort-asc,
+    & .fa-sort {
+      display: none;
+    }
+  }
+
+  @nest th:not(.ascending, .descending) & {
+    & .fa-sort-asc,
+    & .fa-sort-desc {
+      display: none;
+    }
+  }
+}

@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Dados exibidos em uma tabela interativa",
   "scripts": {
-    "prepare": "npm install -g postcss postcss-cssnext",
-    "css": "postcss --use postcss-cssnext -o assets/css/estilos.processados.css assets/css/estilos.css",
-    "build": "npm run css"
+    "prepare": "npm install -g postcss postcss-cssnext livereload",
+    "css": "postcss --use postcss-cssnext --dir assets/css/ assets/css/src/*.css",
+    "build": "npm run css",
+    "dev": "postcss --use postcss-cssnext --dir assets/css/ assets/css/src/*.css -w"
   },
   "author": "Flávio Coutinho",
   "license": "ISC"
