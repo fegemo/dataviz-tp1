@@ -3,6 +3,7 @@
 }
 
 
+/* estilos da célula de cabeçalho da tabela */
 .column-name {
   @nest
   th.ascending &,
@@ -45,4 +46,25 @@
       display: none;
     }
   }
+}
+
+
+
+/* estilos das colunas da tabela */
+.text-column,
+.date-column {
+  text-align: left;
+}
+
+.numeric-column {
+  text-align: right;
+}
+
+.short-text-column {
+  text-align: center;
+}
+
+
+abbr[title] {
+  text-decoration: none;
 }
