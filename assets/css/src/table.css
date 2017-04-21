@@ -64,7 +64,13 @@
   text-align: center;
 }
 
-
+/* resolve bug do Bootstrap v3 */
 abbr[title] {
   text-decoration: none;
+}
+
+
+/* campo de busca */
+#search-input {
+  width: 20em;
 }

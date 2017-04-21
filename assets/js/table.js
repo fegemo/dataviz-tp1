@@ -4,13 +4,14 @@ const SORT_ORDER_TYPES = {
 };
 
 class Table {
-  constructor({ container, headerTemplate, columns }) {
+  constructor({ container, searchInput, headerTemplate, columns }) {
     // seleciona o elemento container e o template do cabeçalho
     this.containerEl = d3.select(container);
     this.headerTemplate = d3.select(headerTemplate).html();
+    this.searchEl = d3.select(searchInput);
 
-    // se o container ou o template não forem encontrados, não tem
-    // como montar a tabela
+    // se o container ou o template ou o campo de busca não forem encontrados,
+    // não tem como montar a tabela
     if (!this.containerEl) {
       throw new Error(`Elemento container ${container} não
         foi encontrado na página`);
@@ -87,30 +88,18 @@ class Table {
           .on('click', () => {
             // define qual a nova ordenação (campo e ordem)
             let previousSortColumn = this.sort.column;
-            this.sort.column = datum.originalName;
-            this.sort.order = this.sort.column === previousSortColumn ?
-              (this.sort.order === null ?
-                true :
-                !this.sort.order)
-              : true;
+            let sortConfig = {
+              column: datum.originalName,
+              order: this.sort.column === previousSortColumn ?
+                (this.sort.order === null ?
+                  true :
+                  !this.sort.order)
+                : true,
+              thEl: thEl
+            }
 
-            // atualiza o ícone de sorting...
-            // (a) da antiga coluna de ordenação
-            d3.selectAll(thEl.closest('tr').querySelectorAll('th'))
-              .classed(d3.values(SORT_ORDER_TYPES).join(' '), false);
-
-            // (b) da atual coluna de ordenação
-            d3.select(thEl)
-              .classed(SORT_ORDER_TYPES[this.sort.order], true)
-              .classed(SORT_ORDER_TYPES[!this.sort.order], false);
-
-            // ordena os dados
-            this.data.sort((rowA, rowB) => {
-              let order = SORT_ORDER_TYPES[this.sort.order];
-              return d3[order](rowA[this.sort.column], rowB[this.sort.column]);
-            });
-
-            this.createBody();
+            // efetivamente ordena
+            this.sortData(sortConfig);
           });
       });
   }
@@ -119,9 +108,6 @@ class Table {
   createBody() {
     this.tableEl.select('tbody').remove()
     let tbodyEl = this.tableEl.append('tbody');
-
-    // remove todas as linhas do corpo da tabela
-    tbodyEl.selectAll('tr').remove();
 
     // cria uma linha para cada linha de dados
     let rows = tbodyEl
@@ -151,6 +137,28 @@ class Table {
 
     return tbodyEl;
   }
+
+  sortData(sortConfig) {
+    // atualiza o ícone de sorting...
+    // (a) da antiga coluna de ordenação
+    d3.selectAll(sortConfig.thEl.closest('tr').querySelectorAll('th'))
+      .classed(d3.values(SORT_ORDER_TYPES).join(' '), false);
+
+    // (b) da atual coluna de ordenação
+    d3.select(sortConfig.thEl)
+      .classed(SORT_ORDER_TYPES[sortConfig.order], true)
+      .classed(SORT_ORDER_TYPES[!sortConfig.order], false);
+
+    // ordena os dados
+    this.data.sort((rowA, rowB) => {
+      let order = SORT_ORDER_TYPES[sortConfig.order];
+      return d3[order](rowA[sortConfig.column], rowB[sortConfig.column]);
+    });
+
+    this.sort = sortConfig;
+
+    this.createBody();
+  }
 }
 
 class TableColumn {
@@ -171,7 +179,7 @@ class TableColumn {
 // }
 
 let formats = {
-  asDate: date => d3.timeFormat('%d/%m/%Y')(date),
+  asDate: date => d3.timeFormat('%m/%d/%Y')(date),
   asNumber: (num, decimals) => Number.isNaN(num) ? '' : d3.format(`.${decimals}f`)(num),
   asCurrency: (num, units, symbol) => `${symbol} ` + d3.format(',')(num/units),
   asCurrencyName: str => `<abbr title="${{'CAD': 'Canadian Dollar', 'EUR': 'Euro', 'USD': 'United States Dollar'}[str]}">${str}</abbr>`
@@ -186,9 +194,10 @@ let transforms = {
 let table = new Table({
   container: '#main-visualization',
   headerTemplate: '#sortable-th-template',
+  searchInput: '#search-input',
   columns: [
     new TableColumn('permalink', 'Permalink', 'text-column'),
-    new TableColumn('company', 'Company'),
+    new TableColumn('company', 'Company', 'text-column'),
     new TableColumn('numEmps', 'Employees', 'numeric-column', transforms.toNumber, num => formats.asNumber(num, 0)),
     new TableColumn('category', 'Category'),
     new TableColumn('city', 'City'),
