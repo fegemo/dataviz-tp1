@@ -502,7 +502,7 @@ let table = new Table({
   columns: [
     new TableColumn('permalink', 'Permalink', 'text-column', transforms.noop, [formats.asSearchable]),
     new TableColumn('company', 'Company', 'text-column', transforms.noop, [formats.asSearchable]),
-    new TableColumn('numEmps', 'Employees', 'numeric-column', transforms.toNumber, [num => formats.asNumber(num, 0), formats.asSearchable], processors.max),
+    new TableColumn('numEmps', 'Employees', 'numeric-column mini-bar-column', transforms.toNumber, [num => formats.asNumber(num, 0), formats.asSearchable], [processors.max]),
     new TableColumn('category', 'Category', 'text-column', transforms.noop, [formats.asSearchable]),
     new TableColumn('city', 'City', 'text-column', transforms.noop, [formats.asSearchable]),
     new TableColumn('state', 'State', 'short-text-column', transforms.noop, [formats.asSearchable, formats.asStateAbbreviation]),
