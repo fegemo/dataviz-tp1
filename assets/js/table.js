@@ -95,6 +95,11 @@ class Table {
 
   // cria a tabela usando os dados em this.data
   createTable() {
+    // cria uma <aside> para tooltips
+    this.tooltipEl = this.containerEl
+      .append('aside')
+      .classed('tooltip', true);
+
     // cria o elemento principal <table> e coloca as classes
     // do bootstrap 'table' e 'table-striped'
     this.tableEl = this.containerEl
@@ -191,10 +196,32 @@ class Table {
           .each((d, i, nodes) => {
             let maxValue = d.column.maxValue;
             let cellValue = d.originalValue || 0;
-            d3.select(nodes[i])
+            let tdEl = d3.select(nodes[i]);
+            let miniBarEl = tdEl
               .append('span')
               .classed('mini-bar', true)
               .style('width', `${(cellValue/maxValue)*100}%`);
+            tdEl
+              .append('aside')
+              .classed('ttip', true);
+            tdEl.on('mouseover', (d, i, n) => {
+              let ttipEl = tdEl.select('.ttip');
+                // this.tooltipEl.transition()
+                ttipEl.transition()
+                  .duration(100)
+                  .delay(350)
+                  .style('opacity', 0.9)
+                  .style('transform', 'translate3d(0, 0, 0)');
+                ttipEl
+                  .text(`${((cellValue/maxValue)*100).toFixed(2)}%`)
+              })
+              .on('mouseout', (d, i, n) => {
+                let ttipEl = tdEl.select('.ttip');
+                ttipEl.transition()
+                  .duration(100)
+                  .style('opacity', 0)
+                  .style('transform', 'translate3d(1em, 0, 0)');
+              });
           });
 
     return tbodyEl;
