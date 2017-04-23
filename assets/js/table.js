@@ -3,12 +3,21 @@ const SORT_ORDER_TYPES = {
   'false': 'descending'
 };
 
+const PAGE_LENGTH = 10;
+
 class Table {
-  constructor({ container, searchInput, headerTemplate, columns }) {
+  constructor({ container, searchInput,
+    p: { pagination, prev, current, next, pageLink },
+    headerTemplate, columns }) {
     // seleciona o elemento container e o template do cabeçalho
     this.containerEl = d3.select(container);
-    this.headerTemplate = d3.select(headerTemplate).html();
     this.searchEl = d3.select(searchInput);
+    this.paginationEl = this.containerEl.select(pagination);
+    this.pageLinks = this.paginationEl.selectAll(pageLink);
+    this.prevPageEl = this.pageLinks.filter(prev);
+    this.currentPageEl = this.pageLinks.filter(current);
+    this.nextPageEl = this.pageLinks.filter(next);
+    this.headerTemplate = d3.select(headerTemplate).html();
 
     // se o container ou o template ou o campo de busca não forem encontrados,
     // não tem como montar a tabela
@@ -23,10 +32,25 @@ class Table {
 
     this.columns = columns;
     this.data = [];
-    this.sort = {
+    this.allData = [];
+
+    this.sortConfig = {
       column: null,
       order: null
     };
+    this.pageConfig = {
+      page: -1
+    };
+
+    this.searchEl.on('keyup', () => {
+      // filtra dos dados
+      this.filterData(d3.event.currentTarget.value);
+      // mostra a primeira página
+      this.paginateData(0);
+      location.hash = '#1';
+      // recarrega as linhas da tabela
+      this.createBody();
+    });
   }
 
   // carrega os dados da tabela a partir de um arquivo CSV
@@ -39,6 +63,10 @@ class Table {
         this.data = data;
         // transforma os dados de acordo com a configuração das colunas
         this.data = this.transformData();
+        // gera uma cópia de todos os dados, já transformados
+        this.allData = this.data.slice(0);
+        // mostra apenas a primeira página
+        this.paginateData(0);
         // ...e cria a tabela
         this.createTable();
       });
@@ -59,7 +87,7 @@ class Table {
     // cria o elemento principal <table> e coloca as classes
     // do bootstrap 'table' e 'table-striped'
     this.tableEl = this.containerEl
-      .append('table')
+      .insert('table', ':first-child')
       .classed('table table-striped', true);
 
     // cria os elementos <thead> e <tbody> devidamente
@@ -87,19 +115,24 @@ class Table {
           .selectAll('.column-sort')
           .on('click', () => {
             // define qual a nova ordenação (campo e ordem)
-            let previousSortColumn = this.sort.column;
+            let previousSortColumn = this.sortConfig.column;
             let sortConfig = {
               column: datum.originalName,
-              order: this.sort.column === previousSortColumn ?
-                (this.sort.order === null ?
+              order: this.sortConfig.column === previousSortColumn ?
+                (this.sortConfig.order === null ?
                   true :
-                  !this.sort.order)
+                  !this.sortConfig.order)
                 : true,
               thEl: thEl
             }
 
             // efetivamente ordena
             this.sortData(sortConfig);
+            // monta a primeira página
+            this.paginateData(0);
+            location.hash = '#1';
+            // recarrega as linhas da tabela
+            this.createBody();
           });
       });
   }
@@ -112,7 +145,7 @@ class Table {
     // cria uma linha para cada linha de dados
     let rows = tbodyEl
       .selectAll('tr')
-      .data(this.data)
+      .data(this.pageConfig.page === -1 ? this.data : this.paginatedData)
       .enter()
       .append('tr');
 
@@ -123,7 +156,6 @@ class Table {
         // retorna um "dado" para cada célula desta linha
         return this.columns.map(col => {
           return {
-            // column: col.originalName,
             column: col,
             value: row[col.originalName],
             row: row
@@ -155,9 +187,105 @@ class Table {
       return d3[order](rowA[sortConfig.column], rowB[sortConfig.column]);
     });
 
-    this.sort = sortConfig;
+    this.sortConfig = sortConfig;
+  }
 
-    this.createBody();
+  filterData(query) {
+    query = query ? query.trim() : '';
+    let emptyQuery = query === '';
+    this.filterConfig = {
+      query: query,
+      in: this.allData.filter(
+        datum => datum['permalink'].indexOf(query) !== -1 || emptyQuery)
+    };
+
+    this.data = this.filterConfig.in;
+  }
+
+  paginateData(page) {
+    let length = this.data.length;
+    let totalPages = Math.ceil(length / PAGE_LENGTH);
+
+    this.pageConfig = {
+      page: page
+    };
+
+    this.paginatedData = this.data.slice(
+      PAGE_LENGTH * page,               // início da página atual
+      (PAGE_LENGTH * (page + 1))        // fim da página atual
+    );
+
+    // atualiza os elementos para refletirem a nova configuração das páginas
+    let pagesData = [-1, -30, -2, -1, 0, 1, 2, 30, 1]
+      .map(p => this.pageConfig.page + p)
+      .filter((p, i, arr) => p >= 0 && p < totalPages || i === 0 || i === arr.length - 1);
+    let pageLinks = this.paginationEl.selectAll('li').data(pagesData);
+
+    let t = d3.transition()
+      .duration(750)
+      .ease(d3.easeElasticOut);
+
+    // exiting elements
+    let exiting = pageLinks.exit();
+    exiting.transition(t)
+      .ease(d3.easeLinear)
+      .style('opacity', 0)
+      .style('transform', 'scale(0.1)')
+      .remove();
+
+    // updating elements
+    pageLinks
+      .classed('active', d => d === this.pageConfig.page)
+      .classed('disabled', d => d < 0 || d >= totalPages)
+      .select('a')
+        .attr('href', d => `#${d+1}`)
+        .html((d, i) => {
+          switch (i) {
+            case 0: return '<span aria-hidden="true">&laquo;</span>';
+            case pagesData.length - 1: return '<span aria-hidden="true">&raquo;</span>';
+            default: return d+1;
+          }
+        });
+
+    // entering elmeents
+    let entering = pageLinks.enter();
+    entering.append('li')
+      .style('transform', 'scale(0.1)')
+      .style('opacity', '0')
+      .classed('active', d => d === this.pageConfig.page)
+      .append('a')
+        .attr('href', d => `#${d+1}`)
+        .classed('page-link', true)
+        .html((d, i) => {
+          switch (i) {
+            case 0: return '<span aria-hidden="true">&laquo;</span>';
+            case pagesData.length - 1: return '<span aria-hidden="true">&raquo;</span>';
+            default: return d+1;
+          }
+        })
+        .on('click', (d, i) => {
+          if (d < 0 || d > totalPages - 1) {
+            d3.event.preventDefault();
+            return;
+          }
+          // foi necessário fazer a nova paginação apenas no próximo tick
+          // porque senão o navegador navegava para o hash fragment da nova
+          // href do botão
+          setTimeout(() => {
+            // faz a paginação
+            this.paginateData(d);
+            // recria o corpo da tabela
+            this.createBody();
+          }, 0);
+        })
+    entering.selectAll('li:first-child, li:last-child')
+      .classed('disabled', d => d < 0 || d >= totalPages)
+      .select('a')
+        .attr('aria-label', (_, i) => i === 0 ? 'Previous' : 'Next')
+        .attr('rel', (_, i) => i === 0 ? 'prev' : 'next')
+    entering.selectAll('li').transition(t)
+      .style('transform', 'scale(1)')
+      .style('opacity', '1');
   }
 }
 
@@ -193,8 +321,15 @@ let transforms = {
 
 let table = new Table({
   container: '#main-visualization',
-  headerTemplate: '#sortable-th-template',
   searchInput: '#search-input',
+  p: {
+    pagination: '.pagination',
+    prev: '#prev-page',
+    current: '#current-page',
+    next: '#next-page',
+    pageLink: '.page-link'
+  },
+  headerTemplate: '#sortable-th-template',
   columns: [
     new TableColumn('permalink', 'Permalink', 'text-column'),
     new TableColumn('company', 'Company', 'text-column'),

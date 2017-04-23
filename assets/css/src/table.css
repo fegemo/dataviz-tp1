@@ -74,3 +74,12 @@ abbr[title] {
 #search-input {
   width: 20em;
 }
+
+/* paginação */
+.pagination > li {
+  display: inline-block;
+}
+
+.pagination-container {
+  text-align: center;
+}
