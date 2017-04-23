@@ -5,6 +5,10 @@
 
 
 /* estilos da célula de cabeçalho da tabela */
+th {
+  white-space: nowrap;
+}
+
 .column-name {
   @nest
   th.ascending &,
@@ -160,4 +164,19 @@ abbr[title] {
 mark {
   background-color: var(--search-result-bgcolor);
   padding: 0;
+}
+
+/* gráfico de barras nas colunas numéricas */
+td.mini-bar-column {
+  position: relative;
+
+  & .mini-bar {
+    display: block;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 6px;
+    background-color: silver;
+    width: 50%;
+  }
 }

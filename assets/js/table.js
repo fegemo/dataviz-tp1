@@ -62,6 +62,7 @@ class Table {
         this.data = data;
         // transforma os dados de acordo com a configuração das colunas
         this.data = this.transformData();
+        this.columns = this.processColumns();
         // gera uma cópia de todos os dados, já transformados
         this.allData = this.data.slice(0);
         // mostra apenas a primeira página
@@ -81,6 +82,15 @@ class Table {
          return prev;
        }, {});
     });
+  }
+
+  processColumns() {
+    return this.columns.map(col => {
+      let columnData = this.data.map(d => d[col.originalName]);
+      return col.processor.reduce((prev, curr) =>
+        curr.apply(this, [prev, columnData]), col)
+      }
+    );
   }
 
   // cria a tabela usando os dados em this.data
@@ -158,6 +168,7 @@ class Table {
         return this.columns.map(col => {
           return {
             column: col,
+            originalValue: row[col.originalName],
             value: row[col.originalName],
             row: row
           };
@@ -165,7 +176,6 @@ class Table {
       })
       .enter()
       .append('td')
-        // .html(col => col.column.format(col.value, col.row))
         .html(function(col) {
           let table = this;
           return col.column.format.reduce((prev, curr) => {
@@ -176,7 +186,16 @@ class Table {
           }, { value: col.value, row: col.row })
             .value
         }.bind(this))
-        .attr('class', col => col.column.cl);
+        .attr('class', col => col.column.cl)
+        .filter('.numeric-column')
+          .each((d, i, nodes) => {
+            let maxValue = d.column.maxValue;
+            let cellValue = d.originalValue || 0;
+            d3.select(nodes[i])
+              .append('span')
+              .classed('mini-bar', true)
+              .style('width', `${(cellValue/maxValue)*100}%`);
+          });
 
     return tbodyEl;
   }
@@ -281,7 +300,7 @@ class Table {
           }
         });
 
-    // entering elmeents
+    // entering elements
     let entering = pageLinks.enter();
     entering.append('li')
       .style('transform', 'scale(0.1)')
@@ -343,13 +362,15 @@ class Table {
 }
 
 class TableColumn {
-  constructor(originalName, label,  cl, transform, format) {
+  constructor(originalName, label,  cl, transform, format, processor) {
     this.originalName = originalName;
     this.label = label;
     this.cl = cl || '';
     this.transform = transform || (s => s);
     format = format || (s => s)
     this.format = Array.isArray(format) ? format : [format];
+    processor = processor || (s => s);
+    this.processor = Array.isArray(processor) ? processor : [processor];
   }
 }
 
@@ -364,7 +385,11 @@ let formats = {
   asDate: date => d3.timeFormat('%m/%d/%Y')(date),
   asNumber: (num, decimals) => Number.isNaN(num) ? '' : d3.format(`.${decimals}f`)(num),
   asCurrency: (num, units, symbol) => `${symbol} ` + d3.format(',')(num/units),
-  asCurrencyName: str => `<abbr title="${{'CAD': 'Canadian Dollar', 'EUR': 'Euro', 'USD': 'United States Dollar'}[str]}">${str}</abbr>`,
+  asCurrencyName: str => `<abbr title="${{
+      'CAD': 'Canadian Dollar',
+      'EUR': 'Euro',
+      'USD': 'United States Dollar'
+    }[str]}">${str}</abbr>`,
   asStateAbbreviation: str => `<abbr title="${{
       'AL': 'Alabama',
       'AK': 'Alaska',
@@ -436,6 +461,11 @@ let transforms = {
   noop: x => x
 };
 
+let processors = {
+  distinct: (col, data) => (col.distinctValues = (data.filter((d, i, self) => self.indexOf(d) === i))) && col,
+  max: (col, data) => (col.maxValue = (Math.max(...data))) && col
+}
+
 let table = new Table({
   container: '#main-visualization',
   searchInput: '#search-input',
@@ -445,12 +475,12 @@ let table = new Table({
   columns: [
     new TableColumn('permalink', 'Permalink', 'text-column', transforms.noop, [formats.asSearchable]),
     new TableColumn('company', 'Company', 'text-column', transforms.noop, [formats.asSearchable]),
-    new TableColumn('numEmps', 'Employees', 'numeric-column', transforms.toNumber, [num => formats.asNumber(num, 0), formats.asSearchable]),
+    new TableColumn('numEmps', 'Employees', 'numeric-column', transforms.toNumber, [num => formats.asNumber(num, 0), formats.asSearchable], processors.max),
     new TableColumn('category', 'Category', 'text-column', transforms.noop, [formats.asSearchable]),
     new TableColumn('city', 'City', 'text-column', transforms.noop, [formats.asSearchable]),
     new TableColumn('state', 'State', 'short-text-column', transforms.noop, [formats.asSearchable, formats.asStateAbbreviation]),
     new TableColumn('fundedDate', 'Funded When', 'date-column', transforms.toDate, [formats.asDate, formats.asSearchable]),
-    new TableColumn('raisedAmt', 'Amount Raised', 'numeric-column', transforms.toNumber, [(num, row) => formats.asCurrency(num, 1, row.raisedCurrency), formats.asSearchable]),
+    new TableColumn('raisedAmt', 'Amount Raised', 'numeric-column mini-bar-column', transforms.toNumber, [(num, row) => formats.asCurrency(num, 1, row.raisedCurrency), formats.asSearchable], [processors.max]),
     new TableColumn('raisedCurrency', 'Currency', 'short-text-column', transforms.noop, [formats.asSearchable, formats.asCurrencyName]),
     new TableColumn('round', 'Round', 'short-text-column', transforms.noop, [formats.asSearchable]),
   ]
