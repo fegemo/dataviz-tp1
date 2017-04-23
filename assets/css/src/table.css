@@ -187,13 +187,15 @@ td.mini-bar-column {
     bottom: 7px;
     text-align: center;
     opacity: 0;
-    height: 1.5em;
-    padding: 0.25em 0.25em;
+    /*height: 1.5em;*/
+    padding: 1px 0.25em;
     font-size: 12px;
     font-weight: bold;
-    background: color(lightsteelblue a(90%));
+    background: color(black a(75%));
+    color: white;
     border: 0;
     border-radius: 4px 4px 0 4px;
+    border: 1px solid black;
     pointer-events: none;
     overflow: hidden;
     transform: translate3d(1em, 0, 0);
