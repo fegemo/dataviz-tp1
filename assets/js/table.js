@@ -204,7 +204,9 @@ class Table {
     this.filterConfig = {
       query: query,
       in: this.allData.filter(
-        datum => datum['permalink'].indexOf(query) !== -1 || emptyQuery)
+        datum => emptyQuery || d3.values(datum)
+          .some(v => v.toString().indexOf(query) !== -1)
+      )
     };
 
     // atualiza o texto sobre como está o filtro na parte de estatísticas
