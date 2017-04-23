@@ -16,11 +16,22 @@
 
 
 
-      <div class="statistics">
+      <div class="statistics showing">
+        <button type="button" class="btn active pin" aria-label="Pin">
+          <i class="fa fa-thumb-tack" aria-hidden="true"></i>
+        </button>
         <nav class="pagination-container" aria-label="Table page navigation">
           <ul class="pagination">
           </ul>
         </nav>
+        <div class="stats-container">
+          <span class="filter-stats stats"
+            data-template="Filtering: '{{query}}' ({{qty}})"></span>
+          <span class="sort-stats stats"
+            data-template="Sorting: '{{column}}'"></span>
+          <span class="page-stats stats"
+            data-template="Page {{page}}/{{totalPages}}: {{first}} to {{last}}"></span>
+        </div>
       </div>
     </article>
 

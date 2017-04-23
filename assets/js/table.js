@@ -6,17 +6,13 @@ const SORT_ORDER_TYPES = {
 const PAGE_LENGTH = 10;
 
 class Table {
-  constructor({ container, searchInput,
-    p: { pagination, prev, current, next, pageLink },
+  constructor({ container, searchInput, statistics, pagination,
     headerTemplate, columns }) {
     // seleciona o elemento container e o template do cabeçalho
     this.containerEl = d3.select(container);
     this.searchEl = d3.select(searchInput);
+    this.statisticsEl = this.containerEl.select(statistics);
     this.paginationEl = this.containerEl.select(pagination);
-    this.pageLinks = this.paginationEl.selectAll(pageLink);
-    this.prevPageEl = this.pageLinks.filter(prev);
-    this.currentPageEl = this.pageLinks.filter(current);
-    this.nextPageEl = this.pageLinks.filter(next);
     this.headerTemplate = d3.select(headerTemplate).html();
 
     // se o container ou o template ou o campo de busca não forem encontrados,
@@ -69,6 +65,8 @@ class Table {
         this.paginateData(0);
         // ...e cria a tabela
         this.createTable();
+        // configura a seção de "estatísticas"
+        this.configureStatistics();
       });
   }
 
@@ -187,6 +185,16 @@ class Table {
       return d3[order](rowA[sortConfig.column], rowB[sortConfig.column]);
     });
 
+    // atualiza o texto sobre como está a ordenação na parte de estatísticas
+    this.statisticsEl.select('.sort-stats')
+      .html((_1, _2, nodes) =>
+        nodes[0].dataset.template.replace(
+          '{{column}}',
+          this.columns.find(c => c.originalName === sortConfig.column).label
+        )
+      )
+      .style('visibility', () => sortConfig.column === null ? 'hidden' : 'visible');
+
     this.sortConfig = sortConfig;
   }
 
@@ -199,6 +207,14 @@ class Table {
         datum => datum['permalink'].indexOf(query) !== -1 || emptyQuery)
     };
 
+    // atualiza o texto sobre como está o filtro na parte de estatísticas
+    this.statisticsEl.select('.filter-stats')
+      .html((_1, _2, nodes) =>
+        nodes[0].dataset.template
+          .replace('{{query}}', query)
+          .replace('{{qty}}', this.filterConfig.in.length))
+       .classed('empty',emptyQuery);
+
     this.data = this.filterConfig.in;
   }
 
@@ -207,13 +223,14 @@ class Table {
     let totalPages = Math.ceil(length / PAGE_LENGTH);
 
     this.pageConfig = {
-      page: page
+      page: page,
+      first: PAGE_LENGTH * page,      // início da página atual
+      last: Math.min(length,          // último registro
+        PAGE_LENGTH * (page + 1))     // fim da página atual
     };
 
     this.paginatedData = this.data.slice(
-      PAGE_LENGTH * page,               // início da página atual
-      (PAGE_LENGTH * (page + 1))        // fim da página atual
-    );
+      this.pageConfig.first, this.pageConfig.last);
 
     // atualiza os elementos para refletirem a nova configuração das páginas
     let pagesData = [-1, -30, -2, -1, 0, 1, 2, 30, 1]
@@ -227,11 +244,13 @@ class Table {
 
     // exiting elements
     let exiting = pageLinks.exit();
-    exiting.transition(t)
-      .ease(d3.easeLinear)
-      .style('opacity', 0)
-      .style('transform', 'scale(0.1)')
-      .remove();
+    exiting
+      .style('position', 'absolute')
+      .transition(t)
+        .ease(d3.easeLinear)
+        .style('opacity', 0)
+        .style('transform', 'scale(0.1)')
+        .remove();
 
     // updating elements
     pageLinks
@@ -285,7 +304,26 @@ class Table {
         .attr('rel', (_, i) => i === 0 ? 'prev' : 'next')
     entering.selectAll('li').transition(t)
       .style('transform', 'scale(1)')
+      .style('transform', 'scale(1)')
       .style('opacity', '1');
+
+
+    // atualiza o texto sobre como está o filtro na parte de estatísticas
+    this.statisticsEl.select('.page-stats')
+      .html((_1, _2, nodes) =>
+        nodes[0].dataset.template
+          .replace('{{page}}', this.pageConfig.page + 1)
+          .replace('{{totalPages}}', totalPages)
+          .replace('{{first}}', this.pageConfig.first + 1)
+          .replace('{{last}}', this.pageConfig.last));
+  }
+
+  configureStatistics() {
+    // evento do botão de "pin" da seção de estatísticas
+    this.statisticsEl.select('.pin').on('click', (_d, i, nodes) => {
+      let showing = this.statisticsEl.node().classList.toggle('showing');
+      nodes[i].classList.toggle('active', showing);
+    });
   }
 }
 
@@ -322,13 +360,8 @@ let transforms = {
 let table = new Table({
   container: '#main-visualization',
   searchInput: '#search-input',
-  p: {
-    pagination: '.pagination',
-    prev: '#prev-page',
-    current: '#current-page',
-    next: '#next-page',
-    pageLink: '.page-link'
-  },
+  statistics: '.statistics',
+  pagination: '.pagination',
   headerTemplate: '#sortable-th-template',
   columns: [
     new TableColumn('permalink', 'Permalink', 'text-column'),
