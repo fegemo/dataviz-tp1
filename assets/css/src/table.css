@@ -1,5 +1,6 @@
 :root {
   --sort-icon-background: #fbffd7;
+  --search-result-bgcolor: yellow;
 }
 
 
@@ -153,4 +154,10 @@ abbr[title] {
 
 .pagination-container {
   text-align: center;
+}
+
+/* busca */
+mark {
+  background-color: var(--search-result-bgcolor);
+  padding: 0;
 }

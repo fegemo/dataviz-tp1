@@ -30,6 +30,9 @@ class Table {
     this.data = [];
     this.allData = [];
 
+    this.filterConfig = {
+      query: ''
+    };
     this.sortConfig = {
       column: null,
       order: null
@@ -162,7 +165,17 @@ class Table {
       })
       .enter()
       .append('td')
-        .html(col => col.column.format(col.value, col.row))
+        // .html(col => col.column.format(col.value, col.row))
+        .html(function(col) {
+          let table = this;
+          return col.column.format.reduce((prev, curr) => {
+            return {
+              value: curr.apply(table, [prev.value, prev.row]),
+              row: prev.row
+            };
+          }, { value: col.value, row: col.row })
+            .value
+        }.bind(this))
         .attr('class', col => col.column.cl);
 
     return tbodyEl;
@@ -205,7 +218,7 @@ class Table {
       query: query,
       in: this.allData.filter(
         datum => emptyQuery || d3.values(datum)
-          .some(v => v.toString().indexOf(query) !== -1)
+          .some(v => v.toString().toLowerCase().indexOf(query.toLowerCase()) !== -1)
       )
     };
 
@@ -335,7 +348,8 @@ class TableColumn {
     this.label = label;
     this.cl = cl || '';
     this.transform = transform || (s => s);
-    this.format = format || (s => s);
+    format = format || (s => s)
+    this.format = Array.isArray(format) ? format : [format];
   }
 }
 
@@ -350,7 +364,18 @@ let formats = {
   asDate: date => d3.timeFormat('%m/%d/%Y')(date),
   asNumber: (num, decimals) => Number.isNaN(num) ? '' : d3.format(`.${decimals}f`)(num),
   asCurrency: (num, units, symbol) => `${symbol} ` + d3.format(',')(num/units),
-  asCurrencyName: str => `<abbr title="${{'CAD': 'Canadian Dollar', 'EUR': 'Euro', 'USD': 'United States Dollar'}[str]}">${str}</abbr>`
+  asCurrencyName: str => `<abbr title="${{'CAD': 'Canadian Dollar', 'EUR': 'Euro', 'USD': 'United States Dollar'}[str]}">${str}</abbr>`,
+  asSearchable: function(str) {
+    let query = this.filterConfig.query;
+    if (!query || query.trim() === '') {
+      return str;
+    }
+    let term = query.replace(/(\s+)/,"(<[^>]+>)*$1(<[^>]+>)*");
+    let pattern = new RegExp(`(${term})`, 'gi');
+    str = str.replace(pattern, '<mark>$1</mark>');
+    str = str.replace(/(<mark>[^<>]*)((<[^>]+>)+)([^<>]*<\/mark>)/, '$1</mark>$2<mark>$4');
+    return str;
+  }
 };
 
 let transforms = {
@@ -366,16 +391,16 @@ let table = new Table({
   pagination: '.pagination',
   headerTemplate: '#sortable-th-template',
   columns: [
-    new TableColumn('permalink', 'Permalink', 'text-column'),
-    new TableColumn('company', 'Company', 'text-column'),
-    new TableColumn('numEmps', 'Employees', 'numeric-column', transforms.toNumber, num => formats.asNumber(num, 0)),
-    new TableColumn('category', 'Category'),
-    new TableColumn('city', 'City'),
-    new TableColumn('state', 'State', 'short-text-column'),
-    new TableColumn('fundedDate', 'Funded When', '', transforms.toDate, formats.asDate),
-    new TableColumn('raisedAmt', 'Amount Raised', 'numeric-column', transforms.toNumber, (num, row) => formats.asCurrency(num, 1, row.raisedCurrency)),
-    new TableColumn('raisedCurrency', 'Currency', 'short-text-column', transforms.noop, formats.asCurrencyName),
-    new TableColumn('round', 'Round'),
+    new TableColumn('permalink', 'Permalink', 'text-column', transforms.noop, [formats.asSearchable]),
+    new TableColumn('company', 'Company', 'text-column', transforms.noop, [formats.asSearchable]),
+    new TableColumn('numEmps', 'Employees', 'numeric-column', transforms.toNumber, [num => formats.asNumber(num, 0), formats.asSearchable]),
+    new TableColumn('category', 'Category', 'text-column', transforms.noop, [formats.asSearchable]),
+    new TableColumn('city', 'City', 'text-column', transforms.noop, [formats.asSearchable]),
+    new TableColumn('state', 'State', 'short-text-column', transforms.noop, [formats.asSearchable]),
+    new TableColumn('fundedDate', 'Funded When', 'date-column', transforms.toDate, [formats.asDate, formats.asSearchable]),
+    new TableColumn('raisedAmt', 'Amount Raised', 'numeric-column', transforms.toNumber, [(num, row) => formats.asCurrency(num, 1, row.raisedCurrency), formats.asSearchable]),
+    new TableColumn('raisedCurrency', 'Currency', 'short-text-column', transforms.noop, [formats.asSearchable, formats.asCurrencyName]),
+    new TableColumn('round', 'Round', 'short-text-column', transforms.noop, [formats.asSearchable]),
   ]
 });
 table.loadFromCSV('data/dados-tp1.csv');
