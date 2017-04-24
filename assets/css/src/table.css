@@ -200,3 +200,43 @@ td.mini-bar-column {
     transform: translate3d(1em, 0, 0);
   }
 }
+
+
+/* máscara de "loading" */
+#main-visualization {
+  position: relative;
+
+  & table {
+    margin-bottom: 100px;
+    table-layout: fixed;
+  }
+}
+
+.loading-mask {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: color(black a(10%));
+
+  &::before {
+    content: ":D";
+    position: absolute;
+    display: block;
+    width: 2em;
+    height: 2em;
+    left: calc(50% - 1em);
+    top: calc(50% - 1em;);
+    font-family: monospace;
+    border-radius: 50%;
+    background-color: white;
+
+    animation: rotating 1s linear 0s infinite;
+  }
+}
+
+@keyframes rotating {
+  from  { transform: rotateZ(0turn); }
+  to    { transform: rotateZ(1turn); }
+}

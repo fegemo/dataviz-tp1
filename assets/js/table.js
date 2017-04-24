@@ -3,8 +3,6 @@ const SORT_ORDER_TYPES = {
   'false': 'descending'
 };
 
-let rowsPerPage = 10;
-
 class Table {
   constructor({ container, searchInput, statistics, pagination,
     headerTemplate, columns }) {
@@ -26,6 +24,7 @@ class Table {
         ${headerTemplate} não foi encontrado na página`);
     }
 
+    this.rowsPerPage = 10;
     this.columns = columns;
     this.data = [];
     this.allData = [];
@@ -65,10 +64,14 @@ class Table {
         this.columns = this.processColumns();
         // gera uma cópia de todos os dados, já transformados
         this.allData = this.data.slice(0);
-        // mostra apenas a primeira página
-        this.paginateData(0);
         // ...e cria a tabela
         this.createTable();
+        // ajusta a largura das colunas e a qtde ideal de linhas por página
+        this.determineColumnWidths();
+        // mostra apenas a primeira página
+        this.paginateData(0);
+        // reconstrói o corpo da tabela mostrando apenas página 1
+        this.createBody();
         // configura a seção de "estatísticas"
         this.configureStatistics();
       });
@@ -287,14 +290,13 @@ class Table {
 
   // mostra apenas uma página de dados
   paginateData(page) {
-    let length = this.data.length;
-    let totalPages = Math.ceil(length / rowsPerPage);
+    let totalPages = Math.ceil(this.allData.length / this.rowsPerPage);
 
     this.pageConfig = {
       page: page,
-      first: rowsPerPage * page,      // início da página atual
-      last: Math.min(length,          // último registro
-        rowsPerPage * (page + 1))     // fim da página atual
+      first: this.rowsPerPage * page,      // início da página atual
+      last: Math.min(this.allData.length,  // último registro
+        this.rowsPerPage * (page + 1))     // fim da página atual
     };
 
     this.paginatedData = this.data.slice(
@@ -351,6 +353,7 @@ class Table {
           }
         })
         .on('click', (d, i) => {
+          let totalPages = Math.ceil(this.allData.length / this.rowsPerPage);
           if (d < 0 || d > totalPages - 1) {
             d3.event.preventDefault();
             return;
@@ -393,6 +396,59 @@ class Table {
       let showing = this.statisticsEl.node().classList.toggle('showing');
       nodes[i].classList.toggle('active', showing);
     });
+  }
+
+  determineRowsPerPage() {
+    let availableHeight = window.innerHeight -
+      // parte de cima da página
+      (this.containerEl.node().getClientRects()[0].top +
+      this.containerEl.select('.statistics').node().getClientRects()[0].height);
+    let rowHeights = this.tableEl
+      .selectAll('tr')
+      .nodes()
+      .map(n => n.getClientRects()[0].height);
+    let rowHeightsFreq = rowHeights.reduce((prev, curr) => {
+      prev[curr] = !!prev[curr] ? prev[curr]+1 : 1;
+      return prev;
+    }, {});
+    // let maxRowHeight = Math.max(...rowHeights);
+    let weighedAverageRowHeight = d3.keys(rowHeightsFreq).reduce((prev, curr) => {
+      return prev + (curr * rowHeightsFreq[curr]);
+    }, 0) / d3.values(rowHeightsFreq).reduce((prev, curr) => prev + curr, 0);
+
+    console.log('weighedAverageRowHeight: ' + weighedAverageRowHeight);
+    console.log('Math.floor(availableHeight / weighedAverageRowHeight): ' + Math.floor(availableHeight / weighedAverageRowHeight));
+    return Math.floor(availableHeight / weighedAverageRowHeight);
+  }
+
+  determineColumnWidths() {
+    // determina largura disponível para a tabela
+    let availableWidth = this.containerEl.node().getClientRects()[0].width;
+
+    // mostra um "loading" para "esconder os cálculos"
+    this.containerEl.append('div').classed('loading-mask', true);
+
+    // carrega todos os dados na tabela (paginateDate(-1))
+    this.paginateData(-1);
+
+    // determina qual a quantidade de linhas por página
+    this.rowsPerPage = this.determineRowsPerPage();
+    // espera 1 tick para que o navegador renderize toda a tabela
+    setTimeout(() => {
+      // encontra a largura computada para cada coluna
+      // e define a largura para cada célula do cabeçalho
+      this.tableEl.selectAll('th').each((d, i, nodes) => {
+        nodes[i].style.maxWidth = `${nodes[i].getClientRects()[0].width/availableWidth}%`;
+        // nodes[i].style.width = `${nodes[i].getClientRects()[0].width}px`;
+      });
+
+      // carrega os dados da página atual
+      this.paginateData(0);
+
+      // tira o "loading"
+      this.containerEl.select('.loading-mask').remove();
+
+    }, 200);
   }
 }
 
