@@ -3,7 +3,7 @@ const SORT_ORDER_TYPES = {
   'false': 'descending'
 };
 
-const PAGE_LENGTH = 10;
+let rowsPerPage = 10;
 
 class Table {
   constructor({ container, searchInput, statistics, pagination,
@@ -74,6 +74,8 @@ class Table {
       });
   }
 
+  // transforma os dados, convertendo-os de strings (CSV) para seus devidos
+  // tipos, de acordo com os metadados das colunas
   transformData() {
     return this.data.map(row => {
        return this.columns.reduce((prev, curr) => {
@@ -84,6 +86,8 @@ class Table {
     });
   }
 
+  // faz eventuais processamentos nos dados das colunas como, por exemplo,
+  // determinar qual é o maior valor, os valores distintos etc.
   processColumns() {
     return this.columns.map(col => {
       let columnData = this.data.map(d => d[col.originalName]);
@@ -227,6 +231,7 @@ class Table {
     return tbodyEl;
   }
 
+  // ordena os dados de acordo com a configuração (coluna, ordem) desejada
   sortData(sortConfig) {
     // atualiza o ícone de sorting...
     // (a) da antiga coluna de ordenação
@@ -257,6 +262,7 @@ class Table {
     this.sortConfig = sortConfig;
   }
 
+  // filtra os dados de acordo com o critério de busca desejado
   filterData(query) {
     query = query ? query.trim() : '';
     let emptyQuery = query === '';
@@ -279,15 +285,16 @@ class Table {
     this.data = this.filterConfig.in;
   }
 
+  // mostra apenas uma página de dados
   paginateData(page) {
     let length = this.data.length;
-    let totalPages = Math.ceil(length / PAGE_LENGTH);
+    let totalPages = Math.ceil(length / rowsPerPage);
 
     this.pageConfig = {
       page: page,
-      first: PAGE_LENGTH * page,      // início da página atual
+      first: rowsPerPage * page,      // início da página atual
       last: Math.min(length,          // último registro
-        PAGE_LENGTH * (page + 1))     // fim da página atual
+        rowsPerPage * (page + 1))     // fim da página atual
     };
 
     this.paginatedData = this.data.slice(
@@ -379,6 +386,7 @@ class Table {
           .replace('{{last}}', this.pageConfig.last));
   }
 
+  // configura a parte de "estatísticas" da tabela (parte de baixo da página)
   configureStatistics() {
     // evento do botão de "pin" da seção de estatísticas
     this.statisticsEl.select('.pin').on('click', (_d, i, nodes) => {
