@@ -3,10 +3,14 @@
   --search-result-bgcolor: yellow;
 }
 
+html, body {
+  min-height: 100%;
+}
 
 /* estilos da célula de cabeçalho da tabela */
 th {
   white-space: nowrap;
+  position: relative;
 }
 
 .column-name {
@@ -18,6 +22,8 @@ th {
 }
 
 .column-sort {
+  position: absolute;
+  right: 1em;
   display: inline-block;
   width: 1.4em;
   height: 1.4em;
@@ -25,10 +31,16 @@ th {
   border-radius: 50%;
   text-align: center;
   cursor: pointer;
+  opacity: 0;
   transition: all 100ms ease-out;
 
   &:hover {
     background-color: color(var(--sort-icon-background) lightness(-20%));
+  }
+
+  @nest th:hover & {
+    right: 0;
+    opacity: 1;
   }
 
   @nest th.ascending & {
@@ -116,6 +128,12 @@ abbr[title] {
     }
   }
 
+  @media (-moz-touch-enabled: 1), (pointer: coarse) {
+    & .pin {
+      display: none;
+    }
+  }
+
   & .pin {
     position: absolute;
     right: 1em;
@@ -137,6 +155,11 @@ abbr[title] {
   flex-direction: row;
   justify-content: space-around;
   min-height: 1em;
+
+  @media (max-width: 650px) {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .stats {
@@ -204,11 +227,14 @@ td.mini-bar-column {
 
 /* máscara de "loading" */
 #main-visualization {
-  position: relative;
-
   & table {
     margin-bottom: 100px;
-    table-layout: fixed;
+
+    &.fixed {
+      table-layout: fixed;
+      /*word-break: break-all;*/
+      /*word-wrap: break-word;*/
+    }
   }
 }
 
@@ -221,22 +247,31 @@ td.mini-bar-column {
   background-color: color(black a(10%));
 
   &::before {
-    content: ":D";
+    content: ":)";
     position: absolute;
     display: block;
     width: 2em;
     height: 2em;
     left: calc(50% - 1em);
-    top: calc(50% - 1em;);
+    top: calc(50% - 1em);
     font-family: monospace;
     border-radius: 50%;
     background-color: white;
+    text-align: center;
+    line-height: 2em;
 
-    animation: rotating 1s linear 0s infinite;
+    animation: rotating 3s ease-out 0s 1 forwards,
+      rotating 24s linear 3s infinite,
+      shadowing 1s ease-in-out 0s infinite alternate;
   }
 }
 
 @keyframes rotating {
   from  { transform: rotateZ(0turn); }
-  to    { transform: rotateZ(1turn); }
+  to    { transform: rotateZ(6turn); }
+}
+
+@keyframes shadowing {
+  from  { box-shadow: 0 0 10px 10px color(darkgray a(50%)); }
+  to    { box-shadow: 0 0 10px 20px color(darkgray a(50%)); }
 }

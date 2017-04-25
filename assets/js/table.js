@@ -54,27 +54,39 @@ class Table {
   // carrega os dados da tabela a partir de um arquivo CSV
   // cujo caminho foi passado por parâmetro
   loadFromCSV(path) {
-    d3.csv(path)
-      .get(data => {
-        // assim que conseguir os dados, atribui-os para o
-        // membro data...
-        this.data = data;
-        // transforma os dados de acordo com a configuração das colunas
-        this.data = this.transformData();
-        this.columns = this.processColumns();
-        // gera uma cópia de todos os dados, já transformados
-        this.allData = this.data.slice(0);
-        // ...e cria a tabela
-        this.createTable();
-        // ajusta a largura das colunas e a qtde ideal de linhas por página
-        this.determineColumnWidths();
-        // mostra apenas a primeira página
-        this.paginateData(0);
-        // reconstrói o corpo da tabela mostrando apenas página 1
-        this.createBody();
-        // configura a seção de "estatísticas"
-        this.configureStatistics();
-      });
+    // mostra um "loading" para "esconder os cálculos"
+    let bodyEl = d3.select('body');
+    bodyEl.style('min-height', `${window.innerHeight}px`);
+    bodyEl.append('div').classed('loading-mask', true);
+
+    setTimeout(() => {
+      d3.csv(path)
+        .get(data => {
+          // assim que conseguir os dados, atribui-os para o
+          // membro data...
+          this.data = data;
+          // transforma os dados de acordo com a configuração das colunas
+          this.data = this.transformData();
+          // processa as colunas
+          this.columns = this.processColumns();
+          // gera uma cópia de todos os dados, já transformados
+          this.allData = this.data.slice(0);
+          // ...e cria a tabela
+          this.createTable();
+          // ajusta a largura das colunas e a qtde ideal de linhas por página
+          this.determineColumnWidths();
+          // mostra apenas a primeira página
+          this.paginateData(0);
+          // reconstrói o corpo da tabela mostrando apenas página 1
+          this.createBody();
+
+          // tira o "loading"
+          bodyEl.style('min-height', null).select('.loading-mask').remove();
+
+          // configura a seção de "estatísticas"
+          this.configureStatistics();
+        });
+    }, 1200);
   }
 
   // transforma os dados, convertendo-os de strings (CSV) para seus devidos
@@ -213,7 +225,6 @@ class Table {
               .classed('ttip', true);
             tdEl.on('mouseover', (d, i, n) => {
               let ttipEl = tdEl.select('.ttip');
-                // this.tooltipEl.transition()
                 ttipEl.transition()
                   .duration(100)
                   .delay(350)
@@ -265,6 +276,21 @@ class Table {
     this.sortConfig = sortConfig;
   }
 
+  clearSorting() {
+    this.sortConfig.column = null;
+    this.sortConfig.order = null;
+
+    // atualiza o texto sobre como está a ordenação na parte de estatísticas
+    this.statisticsEl.select('.sort-stats')
+      .html((_1, _2, nodes) => '')
+      .style('visibility', 'hidden');
+
+    // remove os ícones de ordenação
+    d3.selectAll(this.sortConfig.thEl.closest('tr').querySelectorAll('th'))
+      .classed(d3.values(SORT_ORDER_TYPES).join(' '), false);
+
+  }
+
   // filtra os dados de acordo com o critério de busca desejado
   filterData(query) {
     query = query ? query.trim() : '';
@@ -276,6 +302,9 @@ class Table {
           .some(v => v.toString().toLowerCase().indexOf(query.toLowerCase()) !== -1)
       )
     };
+
+    // limpa os dados de ordenação
+    this.clearSorting();
 
     // atualiza o texto sobre como está o filtro na parte de estatísticas
     this.statisticsEl.select('.filter-stats')
@@ -290,12 +319,12 @@ class Table {
 
   // mostra apenas uma página de dados
   paginateData(page) {
-    let totalPages = Math.ceil(this.allData.length / this.rowsPerPage);
+    let totalPages = Math.ceil(this.data.length / this.rowsPerPage);
 
     this.pageConfig = {
       page: page,
       first: this.rowsPerPage * page,      // início da página atual
-      last: Math.min(this.allData.length,  // último registro
+      last: Math.min(this.data.length,  // último registro
         this.rowsPerPage * (page + 1))     // fim da página atual
     };
 
@@ -353,7 +382,7 @@ class Table {
           }
         })
         .on('click', (d, i) => {
-          let totalPages = Math.ceil(this.allData.length / this.rowsPerPage);
+          let totalPages = Math.ceil(this.data.length / this.rowsPerPage);
           if (d < 0 || d > totalPages - 1) {
             d3.event.preventDefault();
             return;
@@ -411,44 +440,41 @@ class Table {
       prev[curr] = !!prev[curr] ? prev[curr]+1 : 1;
       return prev;
     }, {});
-    // let maxRowHeight = Math.max(...rowHeights);
+
     let weighedAverageRowHeight = d3.keys(rowHeightsFreq).reduce((prev, curr) => {
       return prev + (curr * rowHeightsFreq[curr]);
     }, 0) / d3.values(rowHeightsFreq).reduce((prev, curr) => prev + curr, 0);
 
-    console.log('weighedAverageRowHeight: ' + weighedAverageRowHeight);
-    console.log('Math.floor(availableHeight / weighedAverageRowHeight): ' + Math.floor(availableHeight / weighedAverageRowHeight));
-    return Math.floor(availableHeight / weighedAverageRowHeight);
+    return Math.floor(availableHeight / weighedAverageRowHeight) - 1;
   }
 
   determineColumnWidths() {
     // determina largura disponível para a tabela
     let availableWidth = this.containerEl.node().getClientRects()[0].width;
 
-    // mostra um "loading" para "esconder os cálculos"
-    this.containerEl.append('div').classed('loading-mask', true);
-
-    // carrega todos os dados na tabela (paginateDate(-1))
-    this.paginateData(-1);
+    this.containerEl.style('width', '1250px');
+    this.tableEl.style('width', 'initial');
 
     // determina qual a quantidade de linhas por página
     this.rowsPerPage = this.determineRowsPerPage();
     // espera 1 tick para que o navegador renderize toda a tabela
-    setTimeout(() => {
+    // setTimeout(() => {
+      // pega a largura mínima necessária para a tabela
+      let tableMinWidth = window.getComputedStyle(this.tableEl.node()).width;
+
       // encontra a largura computada para cada coluna
       // e define a largura para cada célula do cabeçalho
       this.tableEl.selectAll('th').each((d, i, nodes) => {
-        nodes[i].style.maxWidth = `${nodes[i].getClientRects()[0].width/availableWidth}%`;
-        // nodes[i].style.width = `${nodes[i].getClientRects()[0].width}px`;
+        nodes[i].style.width = `${nodes[i].getClientRects()[0].width/availableWidth * 100}%`;
       });
 
-      // carrega os dados da página atual
-      this.paginateData(0);
 
-      // tira o "loading"
-      this.containerEl.select('.loading-mask').remove();
-
-    }, 200);
+      // coloca "table-layout: fixed" na tabela, para que ela respeite
+      // a largura definida para as colunas
+      this.containerEl.style('width', 'auto');
+      this.tableEl.style('min-width', tableMinWidth);
+      this.tableEl.style('width', '100%');
+      this.tableEl.classed('fixed', true);
   }
 }
 
@@ -464,13 +490,6 @@ class TableColumn {
     this.processor = Array.isArray(processor) ? processor : [processor];
   }
 }
-
-// class TableColumnNumber extends TableColumn {
-//   constructor(originalName, label, cl, decimals) {
-//     super(...arguments);
-//     this.transformation =
-//   }
-// }
 
 let formats = {
   asDate: date => d3.timeFormat('%m/%d/%Y')(date),
