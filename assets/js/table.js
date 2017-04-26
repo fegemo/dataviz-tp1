@@ -177,12 +177,24 @@ class Table {
     this.tableEl.select('tbody').remove()
     let tbodyEl = this.tableEl.append('tbody');
 
+    let t = d3.transition()
+      .duration(200)
+      .ease(d3.easeCubicOut);
+
     // cria uma linha para cada linha de dados
     let rows = tbodyEl
       .selectAll('tr')
       .data(this.pageConfig.page === -1 ? this.data : this.paginatedData)
       .enter()
       .append('tr');
+    // animação de 'surgimento' das linhas
+    rows
+      .style('transform', `translate3d(4em, 0, 0)`)
+      .style('opacity', '0')
+      .transition(t)
+        .delay((d, i, nodes) => i * 50)
+        .style('transform', `translate3d(0, 0, 0)`)
+        .style('opacity', '1');
 
     // cria uma célula para cada coluna, em cada linha
     let cells = rows
@@ -405,7 +417,6 @@ class Table {
         .attr('aria-label', (_, i) => i === 0 ? 'Previous' : 'Next')
         .attr('rel', (_, i) => i === 0 ? 'prev' : 'next')
     entering.selectAll('li').transition(t)
-      .style('transform', 'scale(1)')
       .style('transform', 'scale(1)')
       .style('opacity', '1');
 
