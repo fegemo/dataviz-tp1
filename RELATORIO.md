@@ -60,20 +60,26 @@ Isso foi modelado como uma transformação a ser aplicada aos dados de cada colu
 
 ```js
 // coluna 'company' não requer transformação, logo: transforms.noop (no operation)
-new TableColumn('company', 'Company', 'text-column', transforms.noop, [formats.asSearchable])
+new TableColumn('company', 'Company', 'text-column', transforms.noop, 
+  [formats.asSearchable])
 
 // coluna 'fundedDate' requer cast para Date, logo: transforms.toDate
-new TableColumn('fundedDate', 'Funded When', 'date-column', transforms.toDate, [formats.asDate, formats.asSearchable])
+new TableColumn('fundedDate', 'Funded When', 'date-column', transforms.toDate,
+  [formats.asDate, formats.asSearchable])
 ```
 
 Além da transformação dos dados, algumas colunas tiveram seus valores formatados de maneira diferente. A coluna pode aplicar mais de uma formatação - na verdade, um _array_ de funções formatadoras. Por exemplo:
 
 ```js
 // coluna 'numEmps' exibida como número com 0 casas decimais, logo: formats.asNumber
-new TableColumn('numEmps', 'Employees', 'numeric-column mini-bar-column', transforms.toNumber, [num => formats.asNumber(num, 0), formats.asSearchable], [processors.max])
+new TableColumn('numEmps', 'Employees', 'numeric-column mini-bar-column', transforms.toNumber,
+  [num => formats.asNumber(num, 0), formats.asSearchable], [processors.max])
 
 // coluna 'raisedAmount' exibida como moeda, logo: formats.asCurrency
-new TableColumn('raisedAmt', 'Amount Raised', 'numeric-column mini-bar-column', transforms.toNumber, [(num, row) => formats.asCurrency(num, 1, row.raisedCurrency), formats.asSearchable], [processors.max])
+new TableColumn('raisedAmt', 'Amount Raised', 'numeric-column mini-bar-column',
+  transforms.toNumber, 
+  [(num, row) => formats.asCurrency(num, 1, row.raisedCurrency), formats.asSearchable],
+  [processors.max])
 ```
 
 Todas as colunas possuem uma função formatadora chamada `formats.asSearchable` e essa transformação as torna capazes de ressaltar os resultados da busca em cada célula da tabela (vide próxima seção).
