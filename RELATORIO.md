@@ -24,7 +24,7 @@ Foram implementadas as funcionalidades de:
     **a quantidade de registros** que apareceram na busca
   - _Extra_: os **trechos das palavras** que fizeram com que uma linha
     aparecesse após o filtro são **ressaltados**
-    ([detalhes](#realcando-resultados-da-busca))
+    ([detalhes](#realçando-resultados-da-busca))
 - **Ordenação**: Clicando-se no ícone de ordenação no cabeçalho de cada coluna
   os dados são ordenados de forma crescente ou decrescente, alternando entre
   uma e outra. Detalhes:
@@ -34,15 +34,15 @@ Foram implementadas as funcionalidades de:
     ([detalhes](#ordenando-de-acordo-com-tipo-de-dados))
 - **Paginação**: os dados da tabela são particionados em páginas. Detalhes:
   - Existem **diversos botões**, além dos "&laquo;" e "&raquo;", para facilitar
-    a navegação entre páginas ([detalhes](#botoes-da-paginacao))
+    a navegação entre páginas ([detalhes](#botões-da-paginação))
     - Um botão com o número da página atual fica com cor de fundo destacada
   - _Extra_: o **número de linhas por página** é encontrado **dinamicamente**,
     com o objetivo de aproveitar ao máximo o espaço vertical disponível
     sem que seja necessário usar barras de rolagem
-    ([detalhes](#heuristica-de-linhas-por-pagina))
+    ([detalhes](#heurística-de-linhas-por-página))
 - **Cabeçalhos fixos**: o tamanho das colunas se mantém com o passar
   das páginas ([detalhes](#mantendo-a-largura-das-colunas))
-- **Mini gráfico de barras**: as colunas numéricas (`numEmps` e `raisedAmount`) receberam mini gráficos de barras (deitadas) em cada célula representando o valor percentual daquela célula em relação ao valor máximo ([detalhes](#mini-graficos-de-barras))
+- **Mini gráfico de barras**: as colunas numéricas (`numEmps` e `raisedAmount`) receberam mini gráficos de barras (deitadas) em cada célula representando o valor percentual daquela célula em relação ao valor máximo ([detalhes](#mini-gráficos-de-barras))
   - Ao passar o mouse em cima de uma célula numérica, uma _tooltip_ mostra o valor porcentual
 
 
