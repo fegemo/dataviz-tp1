@@ -3,19 +3,46 @@
   <head>
     <meta name="viewport" content="width=device-width">
     <meta charset="utf-8">
-    <title>Tabela</title>
+    <title>TP1: Dynamic Table</title>
     <link rel="stylesheet" href="vendors/css/bootstrap.min.css">
     <link rel="stylesheet" href="vendors/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="vendors/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Handlee">
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/table.css">
     <link rel="shortcut icon" href="assets/img/favicon.png">
-
   </head>
   <body>
-    <input type="search" id="search-input" placeholder="Type here to search on any field">
-    <article id="main-visualization" class="table-responsive">
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#menu" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <span class="navbar-brand">Dynamic Table</span>
+        </div>
+        <div class="collapse navbar-collapse" id="menu">
+          <p class="navbar-text">
+            <strong>Authors:</strong>
+            <span class="author">Flávio Coutinho</span> and
+            <span class="author">Presleyson Lima</span>
+          </p>
+          <form class="navbar-form navbar-right">
+            <div class="form-group has-feedback">
+              <input type="search" id="search-input" class="form-control"
+                placeholder="Type here to search on any field" accesskey="s">
+              <i class="glyphicon glyphicon-search form-control-feedback"></i>
+            </div>
+          </form>
+        </div>
+      </div>
+    </nav>
 
+    <article id="main-visualization" class="table-responsive">
+      <!-- a tabela vem aqui -->
       <div class="statistics showing">
         <button type="button" class="btn active pin" aria-label="Pin">
           <i class="fa fa-thumb-tack" aria-hidden="true"></i>

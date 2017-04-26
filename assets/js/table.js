@@ -286,9 +286,11 @@ class Table {
       .style('visibility', 'hidden');
 
     // remove os ícones de ordenação
-    d3.selectAll(this.sortConfig.thEl.closest('tr').querySelectorAll('th'))
-      .classed(d3.values(SORT_ORDER_TYPES).join(' '), false);
-
+    if (!!this.sortConfig.thEl) {
+      d3.selectAll(this.sortConfig.thEl.closest('tr').querySelectorAll('th'))
+        .classed(d3.values(SORT_ORDER_TYPES).join(' '), false);
+      this.sortConfig.thEl = null;
+    }
   }
 
   // filtra os dados de acordo com o critério de busca desejado
